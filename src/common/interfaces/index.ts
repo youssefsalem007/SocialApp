@@ -1,0 +1,4 @@
+export * from "./user.interface"
+export * from "./post.interface"
+export * from "./paginate.interface"
+export * from "./comment.interface"
