@@ -46,17 +46,11 @@ export class RedisService {
     return `otp::${email}::${subject}`;
   };
 
-  max_otp_key = ({
-    email,
-   
-  }: RedisKeyType) => {
+  max_otp_key = ({ email }: RedisKeyType) => {
     return `otp:max::${email}`;
   };
 
-  block_otp_key = ({
-    email,
-   
-  }: RedisKeyType): string => {
+  block_otp_key = ({ email }: RedisKeyType): string => {
     return `otp:block::${email}`;
   };
 
@@ -100,19 +94,19 @@ export class RedisService {
   };
 
   get = async (key: string): Promise<any> => {
-  try {
-    const value = await this.client.get(key);
-    if (value === null) return null; 
     try {
-      return JSON.parse(value);
-    } catch {
-      return value; 
+      const value = await this.client.get(key);
+      if (value === null) return null;
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    } catch (error) {
+      console.log("error to get data in redis", error);
+      return null;
     }
-  } catch (error) {
-    console.log("error to get data in redis", error);
-    return null;
-  }
-};
+  };
 
   exists = async (key: string): Promise<number> => {
     try {
@@ -187,27 +181,49 @@ export class RedisService {
 
   FCM_key(userId: Types.ObjectId | string) {
     return `user:FCM:${userId.toString()}`;
-}
- async  addFCM(userId: Types.ObjectId | string, FCMToken: string) {
+  }
+  async addFCM(userId: Types.ObjectId | string, FCMToken: string) {
     return await this.client.sAdd(this.FCM_key(userId), FCMToken);
-}
+  }
 
- async  removeFCM(userId: Types.ObjectId | string, FCMToken: string) {
+  async removeFCM(userId: Types.ObjectId | string, FCMToken: string) {
     return await this.client.sRem(this.FCM_key(userId), FCMToken);
-}
+  }
 
- async  getFCMs(userId: Types.ObjectId | string) {
+  async getFCMs(userId: Types.ObjectId | string) {
     return await this.client.sMembers(this.FCM_key(userId));
-}
+  }
 
- async  hasFCMs(userId: Types.ObjectId | string) {
+  async hasFCMs(userId: Types.ObjectId | string) {
     return await this.client.sCard(this.FCM_key(userId));
-}
+  }
 
- async  removeFCMUser(userId: Types.ObjectId | string) {
+  async removeFCMUser(userId: Types.ObjectId | string) {
     return await this.client.del(this.FCM_key(userId));
-}
+  }
 
+  socketKey(userId: Types.ObjectId | string) {
+    return `user:sockets:${userId.toString()}`;
+  }
+  async addSocket(userId: Types.ObjectId | string, socketId: string) {
+    return await this.client.sAdd(this.socketKey(userId), socketId);
+  }
+
+  async removeSocket(userId: Types.ObjectId | string, socketId: string) {
+    return await this.client.sRem(this.socketKey(userId), socketId);
+  }
+
+  async getSockets(userId: Types.ObjectId | string) {
+    return await this.client.sMembers(this.socketKey(userId));
+  }
+
+  async hasSockets(userId: Types.ObjectId | string) {
+    return await this.client.sCard(this.socketKey(userId));
+  }
+
+  async removeUser(userId: Types.ObjectId | string) {
+    return await this.client.del(this.socketKey(userId));
+  }
 }
 
 export const redisService = new RedisService();

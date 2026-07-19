@@ -28,6 +28,10 @@ import { getAvailability } from "./../../common/utils/post";
 import { PaginateDto } from "../../common/validation";
 import { IPaginate } from "../../common/interfaces";
 import { toObjectId } from "./../../common/utils/objectid";
+import {
+  realTimeGateway,
+  RealTimeGateway,
+} from "./../realtime/realtime.gateway";
 
 export class PostService {
   private populate: PopulateOptions[] = [
@@ -45,12 +49,14 @@ export class PostService {
   private readonly redis: RedisService;
   private readonly s3: S3Service;
   private readonly notification: NotificationService;
+  private realTime: RealTimeGateway;
   constructor() {
     this.userRepository = new UserRepository();
     this.redis = redisService;
     this.notification = notificationService;
     this.s3 = s3Service;
     this.postRepository = new PostRepository();
+    this.realTime = realTimeGateway;
   }
 
   async createPost(
@@ -164,6 +170,13 @@ export class PostService {
     });
     if (!post) {
       throw new NotFoundException("Fail to find matching post");
+    }
+    const owner = post.createdBy as HydratedDocument<IUser>;
+    const socketIds = await this.redis.getSockets(owner._id as Types.ObjectId);
+    if (socketIds.length && Number(react) > 0) {
+      this.realTime
+        .getIo()
+        .emit("likePost", { postId, userId: user._id, react });
     }
     return post.toJSON();
   }

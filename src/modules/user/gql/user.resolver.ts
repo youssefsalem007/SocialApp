@@ -18,7 +18,7 @@ export class UserResolver {
   ): Promise<{ message: string; data: IUser }> => {
     await GQLAuthorization(endPoint.profile, user);
     await GQLValidation<{ search?: string }>(profileGQL, args);
-    const data = await this.userService.profile(user);
+    const { user: data } = await this.userService.profile(user);
     return { message: "welcome", data };
   };
 }

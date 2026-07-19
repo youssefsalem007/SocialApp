@@ -1,5 +1,5 @@
 import express from "express";
-import { authRouter, postRouter, userRouter } from "./modules";
+import { authRouter, postRouter, realTimeGateway, userRouter } from "./modules";
 import { authentication, globalErrorHandler } from "./middleware";
 import { PORT } from "./config/config";
 import connectDB from "./DB/connection.db";
@@ -10,7 +10,11 @@ import { pipeline } from "node:stream";
 import { promisify } from "node:util";
 import { successResponse } from "./common/response/success.response";
 import { createHandler } from "graphql-http/lib/use/express";
-import { schema } from './modules/graphql/schema.gql';
+import { schema } from "./modules/graphql/schema.gql";
+import { Server as HttpSeverType } from "node:http";
+import { chatRouter } from "./modules/chat/index";
+
+
 
 const s3WriteStream = promisify(pipeline);
 
@@ -19,10 +23,14 @@ const bootstrap = async (): Promise<void> => {
 
   app.use(express.json(), cors());
 
-
-    app.all("/graphql", authentication, createHandler({schema: schema, context: (req)=>({user: req.raw.user, decoded: req.raw.decoded})}))
-
-
+  app.all(
+    "/graphql",
+    authentication,
+    createHandler({
+      schema: schema,
+      context: (req) => ({ user: req.raw.user, decoded: req.raw.decoded }),
+    }),
+  );
 
   app.get(
     "/",
@@ -39,6 +47,8 @@ const bootstrap = async (): Promise<void> => {
   app.use("/auth", authRouter);
   app.use("/user", userRouter);
   app.use("/post", postRouter);
+  app.use("/chat", chatRouter);
+
   app.get(
     "/uploads/*path",
     async (
@@ -53,7 +63,7 @@ const bootstrap = async (): Promise<void> => {
       const { path } = req.params as { path: string[] };
       const Key = path.join("/");
       const { Body, ContentType } = await s3Service.getAsset({ Key });
-      console.log({ Body, ContentType });
+      // console.log({ Body, ContentType });
 
       res.setHeader("Content-Type", ContentType || "application/octet-stream");
       res.set("Cross-Origin-Resource-Policy", "cross-origin");
@@ -107,9 +117,12 @@ const bootstrap = async (): Promise<void> => {
   await connectDB();
   await redisService.connect();
 
-  app.listen(PORT, () => {
+  const httpServer: HttpSeverType = app.listen(PORT, () => {
     console.log(`server is running on port ${PORT}`);
   });
+
+  realTimeGateway.initializeIo(httpServer);
+
 };
 
 export default bootstrap;

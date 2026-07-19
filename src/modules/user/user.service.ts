@@ -12,17 +12,22 @@ import { s3Service, S3Service } from "./../../common/service/s3.service";
 import {
   StorageApproachEnum,
   UploadApproachEnum,
-} from "../../common/enums/multer.enum.js";
-import { NotFoundException } from "../../common/exceptions/domain.exception.js";
+} from "../../common/enums/multer.enum";
+import { NotFoundException } from "../../common/exceptions/domain.exception";
+import { ChatRepository } from './../../DB/repository/chat.repository';
+import { IChat } from "../../common/interfaces/chat.interface";
+import { ChatEnum } from "../../common/enums/chat.enum";
 
 export class UserService {
   private readonly redis: RedisService;
   private readonly tokenService: TokenService;
   private readonly userRepository: UserRepository;
+  private readonly chatRepository: ChatRepository;
   private readonly s3: S3Service;
   constructor() {
     ((this.redis = redisService), (this.tokenService = new TokenService()));
     this.userRepository = new UserRepository();
+    this.chatRepository = new ChatRepository();
     this.s3 = s3Service;
   }
 
@@ -75,9 +80,12 @@ export class UserService {
     return user.toJSON();
   }
 
-  async profile(user: HydratedDocument<IUser>): Promise<IUser> {
+  async profile(user: HydratedDocument<IUser>): Promise<{user: IUser, groups: HydratedDocument<IChat>[]}> {
     await user.populate([{ path: "friends" }]);
-    return user.toJSON();
+    const groups = await this.chatRepository.find({
+      filter: {type: ChatEnum.ovm, participants:{$in: [user._id]}}
+    })
+    return {user: user.toJSON(), groups};
   }
 
   logout = async (req: Request, res: Response, next: NextFunction) => {

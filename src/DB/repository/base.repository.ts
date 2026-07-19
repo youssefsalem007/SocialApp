@@ -97,7 +97,7 @@ export abstract class DataBaseRepository<TRawDoc> {
     filter?: QueryFilter<TRawDoc>;
     projection?: ProjectionType<TRawDoc> | null | undefined;
     options?: QueryOptions<TRawDoc> | null | undefined;
-  }): Promise<any> {
+  }): Promise<HydratedDocument<TRawDoc> | FlattenMaps<TRawDoc> | null> {
     const doc = this.model.findOne(filter, projection);
 
     if (options?.lean) doc.lean(options.lean);

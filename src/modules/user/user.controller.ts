@@ -5,13 +5,14 @@ import { authentication, authorization } from '../../middleware'
 import { endPoint } from './user.authorization'
 import { cloudFileUpload } from '../../common/utils/multer/cloud.multer'
 import { fileFieldValidation } from '../../common/utils/multer/validation.multer'
-import { StorageApproachEnum } from '../../common/enums/multer.enum.js'
+import { StorageApproachEnum } from '../../common/enums/multer.enum'
+import { chatRouter } from '../chat/index'
 
 
 const router = Router()
+router.use("/:userId/chat", chatRouter)
 
 router.patch("/profile-image", authentication, 
-   
 async(req: Request, res: Response, next: NextFunction)=>{
    const data = await userService.profileImage(req.body, req.user)
     return successResponse({res, data})

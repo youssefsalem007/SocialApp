@@ -30,7 +30,7 @@ export class NotFoundException extends ApplicationExeption {
 
 export class UnauthorizedException extends ApplicationExeption {
   constructor(message: string = "Unauthorized", cause?: unknown) {
-    super(message, 404, cause);
+    super(message, 401, cause);
   }
 }
 

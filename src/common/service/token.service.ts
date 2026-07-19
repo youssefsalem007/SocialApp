@@ -91,6 +91,7 @@ export class TokenService {
     decoded: JwtPayload;
   }> => {
     const decoded = jwt.decode(token) as JwtPayload;
+    
 
     if (!decoded?.aud?.length) {
       throw new BadRequestException("Missing token audience");
